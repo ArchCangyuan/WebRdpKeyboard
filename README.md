@@ -4,7 +4,7 @@
 
 ## 功能
 
-- 启动后直接进入 `https://autosilicon.cloudflareaccess.com` Cloudflare App Launcher，不显示入口配置页。
+- 启动后直接进入 `https://cangyuan.cloudflareaccess.com/#/Launcher` Cloudflare App Launcher，不显示入口配置页。
 - 提供主页、后退、前进和刷新按钮，行为类似一个精简浏览器。
 - 底部常驻键盘工具栏；软键盘弹出后工具栏自动位于键盘上方。
 - `⌨` 按钮通过原生输入代理强制唤起 Android IME。

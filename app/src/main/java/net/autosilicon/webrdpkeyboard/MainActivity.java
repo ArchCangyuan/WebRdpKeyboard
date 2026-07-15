@@ -44,7 +44,7 @@ import java.util.Locale;
 public final class MainActivity extends Activity {
     private static final String PREFS = "web_rdp_keyboard";
     private static final String PREF_HOME_URL = "home_url";
-    private static final String DEFAULT_HOME_URL = "https://autosilicon.cloudflareaccess.com";
+    private static final String DEFAULT_HOME_URL = "https://cangyuan.cloudflareaccess.com/#/Launcher";
     private static final int TOOLBAR_HEIGHT_DP = 54;
 
     private WebView webView;
