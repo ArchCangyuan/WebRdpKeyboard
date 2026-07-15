@@ -43,7 +43,8 @@ import java.util.Locale;
 
 public final class MainActivity extends Activity {
     private static final String PREFS = "web_rdp_keyboard";
-    private static final String PREF_URL = "rdp_url";
+    private static final String PREF_HOME_URL = "home_url";
+    private static final String DEFAULT_HOME_URL = "https://autosilicon.cloudflareaccess.com";
     private static final int TOOLBAR_HEIGHT_DP = 54;
 
     private WebView webView;
@@ -62,12 +63,7 @@ public final class MainActivity extends Activity {
         buildUi();
         configureWebView();
 
-        String savedUrl = preferences.getString(PREF_URL, "");
-        if (savedUrl == null || savedUrl.trim().isEmpty()) {
-            showUrlDialog(true);
-        } else {
-            webView.loadUrl(savedUrl);
-        }
+        webView.loadUrl(homeUrl());
     }
 
     private void buildUi() {
@@ -112,6 +108,14 @@ public final class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
+        toolbar.addView(keyButton("⌂", "Cloudflare Launcher 主页", v -> webView.loadUrl(homeUrl())));
+        toolbar.addView(keyButton("‹", "后退", v -> {
+            if (webView.canGoBack()) webView.goBack();
+        }));
+        toolbar.addView(keyButton("›", "前进", v -> {
+            if (webView.canGoForward()) webView.goForward();
+        }));
+        toolbar.addView(keyButton("↻", "刷新", v -> webView.reload()));
         toolbar.addView(keyButton("⌨", "显示输入法", v -> showKeyboard()));
         toolbar.addView(keyButton("Esc", "Escape", v -> sendKey(KeyEvent.KEYCODE_ESCAPE)));
         toolbar.addView(keyButton("Tab", "Tab", v -> sendKey(KeyEvent.KEYCODE_TAB)));
@@ -127,7 +131,7 @@ public final class MainActivity extends Activity {
         toolbar.addView(keyButton("↑", "上方向键", v -> sendKey(KeyEvent.KEYCODE_DPAD_UP)));
         toolbar.addView(keyButton("↓", "下方向键", v -> sendKey(KeyEvent.KEYCODE_DPAD_DOWN)));
         toolbar.addView(keyButton("→", "右方向键", v -> sendKey(KeyEvent.KEYCODE_DPAD_RIGHT)));
-        toolbar.addView(keyButton("⚙", "设置 RDP 地址", v -> showUrlDialog(false)));
+        toolbar.addView(keyButton("⚙", "设置浏览器主页", v -> showHomeDialog()));
 
         imeProxy = new ImeProxyView(this);
         imeProxy.setFocusable(true);
@@ -393,12 +397,18 @@ public final class MainActivity extends Activity {
         updateModifierButtons();
     }
 
-    private void showUrlDialog(boolean required) {
+    private String homeUrl() {
+        String saved = preferences.getString(PREF_HOME_URL, DEFAULT_HOME_URL);
+        if (saved == null || saved.trim().isEmpty()) return DEFAULT_HOME_URL;
+        return saved;
+    }
+
+    private void showHomeDialog() {
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        input.setHint("https://rdp.example.com/");
-        input.setText(preferences.getString(PREF_URL, ""));
+        input.setHint(DEFAULT_HOME_URL);
+        input.setText(homeUrl());
         input.setSelectAllOnFocus(true);
 
         FrameLayout box = new FrameLayout(this);
@@ -409,27 +419,32 @@ public final class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT));
 
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Cloudflare Web RDP 地址")
-                .setMessage("仅允许 HTTPS。Cloudflare Access 登录状态会保存在应用的 WebView 中。")
+                .setTitle("浏览器主页")
+                .setMessage("默认是 Cloudflare App Launcher。修改后会设为主页并立即打开。")
                 .setView(box)
-                .setPositiveButton("打开", null)
-                .setNegativeButton(required ? "退出" : "取消", (d, which) -> {
-                    if (required) finish();
-                })
-                .setCancelable(!required)
+                .setPositiveButton("保存并打开", null)
+                .setNegativeButton("取消", null)
+                .setNeutralButton("恢复默认", null)
+                .setCancelable(true)
                 .create();
 
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
+        dialog.setOnShowListener(ignored -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                     String url = normalizeHttpsUrl(input.getText().toString());
                     if (url == null) {
                         input.setError("请输入有效的 HTTPS 地址");
                         return;
                     }
-                    preferences.edit().putString(PREF_URL, url).apply();
+                    preferences.edit().putString(PREF_HOME_URL, url).apply();
                     webView.loadUrl(url);
                     dialog.dismiss();
-                }));
+                });
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+                preferences.edit().remove(PREF_HOME_URL).apply();
+                webView.loadUrl(DEFAULT_HOME_URL);
+                dialog.dismiss();
+            });
+        });
         dialog.show();
     }
 
